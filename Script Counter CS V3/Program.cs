@@ -10,10 +10,7 @@ if (Path.IsPathRooted(path))
     options = Options.Get();
 
     var files = new List<string>();
-    foreach (var type in options.FileTypes)
-    {
-        files.AddRange(Directory.GetFiles(path, type, SearchOption.AllDirectories));
-    }
+    options.FileTypes.ForEach(type => files.AddRange(Directory.GetFiles(path, type, SearchOption.AllDirectories)));
 
     var filteredFiles = new List<string>();
     files.ForEach(f => { if (options.PathFilters.Any(x => f.Contains(x)) is false) filteredFiles.Add(f); });
