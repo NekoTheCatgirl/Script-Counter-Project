@@ -1,24 +1,30 @@
 use std::io::{stdin, BufRead, BufReader};
+use std::{fs, vec};
 use std::fs::File;
-use walkdir::{DirEntry, WalkDir};
 
-fn is_rust(entry: &DirEntry) -> bool
-{
-    return entry.file_name()
-    .to_str()
-    .map(|s: &str| s.ends_with(".rs"))
-    .unwrap_or(false);
+fn walk_directory(path: &str, file_paths: &mut Vec<String>, extension: &str) {
+    if let Ok(entries) = fs::read_dir(path) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                let entry_path = entry.path();
+                if entry_path.is_dir() {
+                    walk_directory(entry_path.to_str().unwrap(), file_paths, extension);
+                } else if let Some(file_extension) = entry_path.extension().and_then(|ext| ext.to_str()) {
+                    if file_extension.eq_ignore_ascii_case(extension) {
+                        if let Some(file_path) = entry_path.to_str() {
+                            file_paths.push(file_path.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn get_files(path: String) -> Vec<String>
 {
     let mut files: Vec<String> = vec![];
-    let index: usize = 0;
-    let walker = WalkDir::new(path).into_iter();
-    for entry in walker.filter_entry(|e| is_rust(e)) {
-        let entry = entry.unwrap();
-        files.insert(index, entry.path().as_os_str().to_str().unwrap().to_string());
-    }
+    walk_directory(path.as_str(), &mut files, ".rs");
     return files;
 }
 
@@ -32,11 +38,11 @@ fn read_file(path: String) -> FileInfo
     let mut lines: u64 = 0;
     let mut characters: u64 = 0;
      
-    let file = BufReader::new(File::open(path).expect("Unable to open file"));
+    let file: BufReader<File> = BufReader::new(File::open(path).expect("Unable to open file"));
 
     for line in file.lines()
     {
-        let line = line.unwrap();
+        let line: String = line.unwrap();
         lines += 1;
         characters += line.len() as u64;
     }
@@ -53,7 +59,9 @@ fn main()
     println!("Please input the root directory of the script folder");
     let mut path: String = String::new();
     stdin().read_line(&mut path).unwrap();
-    let files: Vec<String> = get_files(path);
+    let sanitized_path: String = path.trim_end().to_string();
+    let files: Vec<String> = get_files(sanitized_path);
+    println!("Found {} files", files.len());
     let mut lines: u64 = 0;
     let mut characters: u64 = 0;
     for file in files{
@@ -63,4 +71,6 @@ fn main()
     }
     println!("Total line count {}", lines);
     println!("Total character count {}", characters);
+    let mut input = String::new();
+    stdin().read_line(&mut input).expect("Failed to read line");
 }
