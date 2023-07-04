@@ -24,7 +24,7 @@ fn walk_directory(path: &str, file_paths: &mut Vec<String>, extension: &str) {
 fn get_files(path: String) -> Vec<String>
 {
     let mut files: Vec<String> = vec![];
-    walk_directory(path.as_str(), &mut files, ".rs");
+    walk_directory(path.as_str(), &mut files, "rs");
     return files;
 }
 
